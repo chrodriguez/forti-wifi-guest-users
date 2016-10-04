@@ -29,4 +29,33 @@ La API provee los siguientes endpoints:
 * **POST /get_guest_user**: debe enviar un argumento **name**: 
   Ejemplo curl: `curl -X POST http://localhost:8080/get_guest_user -d 'name=some_name'`
 
+## Dando de alta el servicio con systemd
 
+Inicialmente se recomienda correr bundle de la siguiente forma:
+
+```bash
+bundle binstubs puma --path ./sbin
+```
+*Esto creará el directorio ./sbin localente donde se pondrá el ejecutable de
+puma*
+
+Agregar el archivo `/etc/systemd/system/forti-wifi.service` con el siguiente
+contenido
+
+```ini
+[Unit]
+Description=Forti Wifi API
+After=network.target
+
+[Service]
+Type=simple
+User=forti-wifi
+WorkingDirectory=/home/app/api
+ExecStart=/bin/bash -lc '/home/app/api/sbin/puma -b tcp://0.0.0.0:8080'
+TimeoutSec=15
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+```
