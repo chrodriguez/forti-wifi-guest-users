@@ -27,6 +27,11 @@ post '/get_guest_user' do
   create_forti_user name
 end
 
+delete '/purge' do
+  purge
+  200
+end
+
 def connection
   @connection ||= Faraday.new(:url => settings.url) do |faraday|
     faraday.request   :url_encoded             # form-encode POST params
@@ -55,7 +60,7 @@ def forti_post_user(name)
   csrf = csrf_match[1]
 
   # Try post data
-  response = connection.post "/p/user/guest/edit/WiFI_Invitados/", {csrfmiddlewaretoken: csrf, group: 'WiFI_Invitados', user_name: name, expire:settings.ttl}, referer: "#{settings.url}/p/user/guest/edit/WiFI_Invitados/"
+  response = connection.post "/p/user/guest/edit/WiFI_Invitados/", {csrfmiddlewaretoken: csrf, group: 'WiFI_Invitados', user_name: name, expire: get_ttl}, referer: "#{settings.url}/p/user/guest/edit/WiFI_Invitados/"
   raise 'Post must redirect with 302' unless response.status == 302
   location =  response.headers['location']
 
@@ -63,6 +68,12 @@ def forti_post_user(name)
   response = connection.get location
   raise 'Error reading user data' unless response.status == 200
   response.body
+end
+
+def purge
+  forti_login
+  response = connection.get '/p/user/guest/purge/WiFI_Invitados/'
+  raise 'Error purging' unless response.status == 302
 end
 
 def create_forti_user(name)
@@ -74,4 +85,12 @@ def create_forti_user(name)
 rescue Exception => e
   puts e.message
   500
+end
+
+def get_ttl
+  if settings.ttl_from_now
+    (Time.now + settings.ttl).strftime "%Y-%m-%d %H:%M"
+  else
+    settings.ttl
+  end
 end

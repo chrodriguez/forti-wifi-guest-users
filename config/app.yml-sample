@@ -2,3 +2,4 @@ user: USERNAME
 password: PASSWORD
 url: https://my-forti-host
 ttl: 14400
+ttl_from_now: true
